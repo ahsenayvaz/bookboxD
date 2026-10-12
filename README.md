@@ -23,3 +23,7 @@ npm install
 cp .env.example .env
 npm run dev
 ```
+
+## Zusammenarbeit
+
+Entwicklung erfolgt über Feature-Branches (`feature/*`), Zusammenführung auf `develop` und Meilenstein-Releases auf `main`.
