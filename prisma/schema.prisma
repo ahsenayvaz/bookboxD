@@ -1,0 +1,60 @@
+// BookBoxD – Datenmodell (Entwurf ID-32)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ReadingStatus {
+  WANT_TO_READ
+  READING
+  READ
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  bio          String?  @db.VarChar(300)
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  library LibraryEntry[]
+}
+
+model Book {
+  id            String   @id @default(cuid())
+  olid          String   @unique
+  title         String
+  authors       String[]
+  coverId       Int?
+  pageCount     Int?
+  publishedYear Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  libraryEntries LibraryEntry[]
+}
+
+model LibraryEntry {
+  id          String        @id @default(cuid())
+  userId      String
+  bookId      String
+  status      ReadingStatus
+  currentPage Int           @default(0)
+  rating      Int?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([bookId])
+}
