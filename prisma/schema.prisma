@@ -1,4 +1,4 @@
-// BookBoxD – Datenmodell (Entwurf ID-32)
+// BookBoxD – Datenmodell (ID-32)
 
 generator client {
   provider = "prisma-client"
@@ -25,7 +25,9 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  library LibraryEntry[]
+  library     LibraryEntry[]
+  reviews     Review[]
+  readingLogs ReadingLog[]
 }
 
 model Book {
@@ -40,6 +42,8 @@ model Book {
   updatedAt     DateTime @updatedAt
 
   libraryEntries LibraryEntry[]
+  reviews        Review[]
+  readingLogs    ReadingLog[]
 }
 
 model LibraryEntry {
@@ -57,4 +61,34 @@ model LibraryEntry {
 
   @@unique([userId, bookId])
   @@index([bookId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  bookId    String
+  body      String
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([bookId, published])
+}
+
+model ReadingLog {
+  id        String   @id @default(cuid())
+  userId    String
+  bookId    String
+  date      DateTime @db.Date
+  pagesRead Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
 }
