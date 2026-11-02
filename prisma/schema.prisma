@@ -1,0 +1,112 @@
+// BookBoxD – Datenmodell (ID-32)
+// Nach jeder Änderung: `npm run db:migrate` (Migration) bzw. `npx prisma generate` (nur Client)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ReadingStatus {
+  WANT_TO_READ // „Will lesen“
+  READING // „Lese ich gerade“
+  READ // „Gelesen“
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  bio          String?  @db.VarChar(300)
+  /// Versionierte URL auf /api/avatar/[userId]; null = Standardavatar
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  avatar      Avatar?
+  library     LibraryEntry[]
+  reviews     Review[]
+  readingLogs ReadingLog[]
+}
+
+/// Profilbild als Binärdaten (max. 2 MB Upload, serverseitig auf 400×400 JPEG verkleinert)
+model Avatar {
+  userId    String   @id
+  data      Bytes
+  mimeType  String
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Lokale Kopie eines Buches aus Open Library – wird angelegt, sobald ein Nutzer damit interagiert
+model Book {
+  id            String   @id @default(cuid())
+  /// Open-Library-Work-ID, z. B. "OL1019598W"
+  olid          String   @unique
+  title         String
+  authors       String[]
+  coverId       Int?
+  pageCount     Int?
+  publishedYear Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  libraryEntries LibraryEntry[]
+  reviews        Review[]
+  readingLogs    ReadingLog[]
+}
+
+/// Ein Buch in der persönlichen Bibliothek eines Nutzers inkl. Leseliste, Fortschritt und Bewertung
+model LibraryEntry {
+  id          String        @id @default(cuid())
+  userId      String
+  bookId      String
+  status      ReadingStatus
+  currentPage Int           @default(0)
+  /// Sternebewertung 1–5
+  rating      Int?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([bookId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  bookId    String
+  body      String
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([bookId, published])
+}
+
+/// Tägliche Leseeinträge – Grundlage für den Lese-Streak
+model ReadingLog {
+  id        String   @id @default(cuid())
+  userId    String
+  bookId    String
+  date      DateTime @db.Date
+  pagesRead Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
