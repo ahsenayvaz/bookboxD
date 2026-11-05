@@ -1,1 +1,494 @@
 @import "tailwindcss";
+
+/* ───────────── Farben & Schriften: „Leseecke am Abend“ ───────────── */
+@theme {
+  /* dunkle Hölzer */
+  --color-cocoa: #1b130e;
+  --color-walnut: #261a13;
+  --color-bark: #352419;
+  --color-line: #4a3426;
+
+  /* Papier & Tinte */
+  --color-parchment: #f4e8d2;
+  --color-parchment-deep: #e8d6b6;
+  --color-ink: #3a2618;
+  --color-ink-soft: #6e523c;
+
+  /* Text auf dunklem Grund */
+  --color-cream: #f7ecdb;
+  --color-sand: #dcc6a7;
+  --color-tan: #b39577;
+  --color-dusk: #8a725e;
+
+  /* Akzente */
+  --color-terracotta: #c05a33;
+  --color-terracotta-deep: #9d4526;
+  --color-terracotta-light: #e3845a;
+  --color-ember: #f0a04b;
+  --color-honey: #e6b45a;
+  --color-moss: #8d9b5c;
+  --color-error: #f09a7c;
+
+  --font-serif: "Fraunces Variable", Georgia, serif;
+  --font-sans: "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-hand: "Caveat Variable", "Segoe Print", cursive;
+
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-fade-in: fade-in 0.5s ease-out both;
+  --animate-pop: pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  --animate-ribbon: ribbon 0.6s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  --animate-glow: glow 4s ease-in-out infinite;
+}
+
+/* Keyframes außerhalb von @theme, damit sie auch im CSS nutzbar sind (Leseecke) */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes ribbon {
+  0% {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+
+/* ───────────── Grundlayout ───────────── */
+html {
+  background: var(--color-cocoa);
+}
+
+body {
+  color: var(--color-sand);
+  /* warmes Lampenlicht von oben */
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -12%, rgb(240 160 75 / 0.13), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgb(192 90 51 / 0.07), transparent 70%),
+    var(--color-cocoa);
+  background-attachment: fixed;
+}
+
+/* feines Papierkorn über allem – wirkt hochwertiger als glatte Flächen */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: var(--color-ember);
+  color: var(--color-cocoa);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ember);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ───────────── Bausteine ───────────── */
+@utility btn {
+  @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+@layer components {
+  .btn-primary {
+    @apply btn bg-gradient-to-b from-terracotta-light to-terracotta text-cream shadow-[inset_0_1px_0_rgb(255_255_255/0.25),0_6px_18px_-6px_rgb(192_90_51/0.7)] hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.3),0_10px_26px_-6px_rgb(240_160_75/0.6)] active:translate-y-0;
+  }
+  .btn-ghost {
+    @apply btn border border-tan/40 text-sand hover:border-ember/70 hover:bg-ember/10 hover:text-cream;
+  }
+  .btn-ghost-ink {
+    @apply btn border border-ink/25 text-ink-soft hover:border-terracotta hover:text-terracotta-deep;
+  }
+  .btn-danger {
+    @apply btn bg-[#8f2f1c] text-cream hover:bg-[#7a2616];
+  }
+
+  /* Papierfläche mit leichter Wölbung */
+  .paper {
+    @apply rounded-xl bg-parchment text-ink shadow-[0_1px_0_rgb(255_255_255/0.6)_inset,0_24px_50px_-24px_rgb(0_0_0/0.75)];
+    background-image:
+      radial-gradient(ellipse at 30% 0%, rgb(255 255 255 / 0.45), transparent 60%),
+      radial-gradient(ellipse at 100% 100%, rgb(160 110 60 / 0.12), transparent 60%);
+  }
+
+  /* Eingabefeld wie auf einer Karteikarte geschrieben */
+  .field {
+    @apply w-full rounded-none border-0 border-b-2 border-dashed border-ink/25 bg-transparent px-1 py-2 text-[15px] text-ink transition-colors outline-none placeholder:text-ink-soft/50 focus:border-solid focus:border-terracotta;
+  }
+  .field-label {
+    @apply mb-0.5 block font-serif text-sm font-semibold text-ink-soft italic;
+  }
+  .field-error {
+    @apply mt-1 text-xs font-medium text-[#9a3b20];
+  }
+
+  /* Abschnittsüberschrift mit kleinem Ornament */
+  .ornament-heading {
+    @apply mb-5 flex items-center gap-3 font-serif text-xl font-semibold text-cream italic;
+  }
+  .ornament-heading::after {
+    content: "";
+    @apply h-px flex-1 bg-gradient-to-r from-line to-transparent;
+  }
+  .ornament-heading::before {
+    content: "✦";
+    @apply text-xs text-ember not-italic;
+  }
+
+  /* Buchcover mit Buchrücken-Schattierung */
+  .book {
+    @apply relative overflow-hidden rounded-[3px_6px_6px_3px] bg-bark shadow-[0_10px_22px_-10px_rgb(0_0_0/0.8)] transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)];
+  }
+  .book::after {
+    content: "";
+    @apply pointer-events-none absolute inset-0 rounded-[inherit];
+    background: linear-gradient(
+      90deg,
+      rgb(0 0 0 / 0.35) 0,
+      rgb(255 255 255 / 0.18) 2.5%,
+      rgb(0 0 0 / 0.12) 4.5%,
+      transparent 9%,
+      transparent 94%,
+      rgb(0 0 0 / 0.12) 100%
+    );
+    box-shadow: inset 0 0 0 1px rgb(255 240 220 / 0.08);
+  }
+  a:hover > .book,
+  a:focus-visible > .book {
+    @apply -translate-y-2 -rotate-[1.5deg] shadow-[0_22px_30px_-12px_rgb(0_0_0/0.85),0_0_30px_-8px_rgb(240_160_75/0.35)];
+  }
+
+  /* Holzregal unter einer Bücherreihe */
+  .shelf-plank {
+    @apply relative h-4 rounded-sm shadow-[0_14px_20px_-8px_rgb(0_0_0/0.8)];
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.14), transparent 30%),
+      repeating-linear-gradient(90deg, rgb(0 0 0 / 0.05) 0 2px, transparent 2px 9px),
+      linear-gradient(180deg, #7a4f30, #5a3820 60%, #3f2715);
+  }
+  .shelf-plank::after {
+    content: "";
+    @apply absolute inset-x-0 -bottom-2 h-2 rounded-b-sm bg-[#2b1a0f];
+  }
+
+  /* Rechtstexte als Dokument auf Papier */
+  .prose-paper h2 {
+    @apply mt-9 mb-3 font-serif text-xl font-semibold text-ink;
+  }
+  .prose-paper p,
+  .prose-paper li {
+    @apply mb-3 leading-relaxed text-ink/85;
+  }
+  .prose-paper ul {
+    @apply mb-3 list-disc pl-5 marker:text-terracotta;
+  }
+  .prose-paper a {
+    @apply font-medium text-terracotta-deep underline decoration-terracotta/40 underline-offset-2 hover:decoration-terracotta;
+  }
+  .prose-paper strong {
+    @apply text-ink;
+  }
+  .prose-paper code {
+    @apply rounded bg-parchment-deep px-1 py-0.5 text-[13px];
+  }
+}
+
+/* ───────────── Schwebender Staub im Lampenlicht (Startseite) ───────────── */
+.float-mote {
+  position: absolute;
+  bottom: -10px;
+  border-radius: 9999px;
+  background: var(--color-honey);
+  box-shadow: 0 0 6px 1px rgb(230 180 90 / 0.4);
+  opacity: 0;
+  animation: mote-rise linear infinite;
+}
+@keyframes mote-rise {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate(var(--drift, 20px), -420px);
+    opacity: 0;
+  }
+}
+
+/* ───────────── Leseecke-Illustration ───────────── */
+.nook .rock {
+  transform-box: view-box;
+  transform-origin: 206px 336px;
+  animation: rock 5s ease-in-out infinite;
+}
+.nook .lamp-glow {
+  animation: glow 6s ease-in-out infinite;
+}
+.nook .steam {
+  transform-box: fill-box;
+  animation: steam 3.4s ease-out infinite;
+}
+.nook .steam-2 {
+  animation-delay: 1.7s;
+}
+.nook .page-turn {
+  transform-box: view-box;
+  transform-origin: 246px 189px;
+  animation: page-turn 9s ease-in-out infinite;
+}
+.nook .cat {
+  transform-box: view-box;
+  transform-origin: 342px 339px;
+  animation: breathe 3.8s ease-in-out infinite;
+}
+.nook .star {
+  animation: twinkle 3s ease-in-out infinite;
+}
+@keyframes rock {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+@keyframes steam {
+  0% {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-16px);
+    opacity: 0;
+  }
+}
+/* Seite liegt rechts, klappt kurz nach links und verschwindet dann */
+@keyframes page-turn {
+  0%,
+  78% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+  80% {
+    opacity: 1;
+  }
+  92% {
+    transform: scaleX(-1);
+    opacity: 1;
+  }
+  96%,
+  100% {
+    transform: scaleX(-1);
+    opacity: 0;
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.06);
+  }
+}
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* ───────────── Buch, das sich öffnet (Anmelden/Registrieren) ───────────── */
+.auth-book {
+  --page-w: min(440px, calc(100vw - 32px));
+  position: relative;
+  width: var(--page-w);
+  perspective: 2200px;
+}
+.auth-book-page {
+  position: relative;
+  min-height: 560px;
+}
+.auth-book-cover {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  animation: cover-open-mobile 1.5s cubic-bezier(0.65, 0, 0.35, 1) 0.35s both;
+}
+.auth-book-cover > * {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+.auth-book-cover-back {
+  transform: rotateY(180deg);
+}
+@media (min-width: 768px) {
+  .auth-book {
+    width: calc(var(--page-w) * 2);
+    animation: book-center 1.5s cubic-bezier(0.65, 0, 0.35, 1) 0.35s both;
+  }
+  .auth-book-page,
+  .auth-book-cover {
+    margin-left: 50%;
+    width: 50%;
+  }
+  .auth-book-cover {
+    left: 0;
+    animation-name: cover-open;
+  }
+}
+@keyframes cover-open {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(-180deg);
+  }
+}
+@keyframes cover-open-mobile {
+  0% {
+    transform: rotateY(0deg);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotateY(-180deg);
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@keyframes book-center {
+  from {
+    transform: translateX(-25%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* ───────────── Ladeanzeige: blätterndes Buch ───────────── */
+.loader-book {
+  position: relative;
+  width: 72px;
+  height: 48px;
+  perspective: 400px;
+}
+.loader-book::before,
+.loader-book::after,
+.loader-page {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  background: var(--color-parchment);
+  border: 1px solid var(--color-parchment-deep);
+}
+.loader-book::before {
+  left: 0;
+  border-radius: 6px 0 0 6px;
+}
+.loader-book::after {
+  right: 0;
+  border-radius: 0 6px 6px 0;
+}
+.loader-page {
+  right: 0;
+  z-index: 1;
+  border-radius: 0 6px 6px 0;
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--color-parchment-deep), var(--color-parchment));
+  animation: page-flip 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.loader-page:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.loader-page:nth-child(3) {
+  animation-delay: 0.6s;
+}
+@keyframes page-flip {
+  0%,
+  10% {
+    transform: rotateY(0deg);
+  }
+  60%,
+  100% {
+    transform: rotateY(-180deg);
+  }
+}
+
+/* ───────────── Weniger Bewegung, wenn gewünscht ───────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .float-mote {
+    display: none;
+  }
+}
