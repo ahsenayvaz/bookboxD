@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  experimental: {
+    serverActions: {
+      // Profilbild-Upload (max. 2 MB) + Formular-Overhead
+      bodySizeLimit: "3mb",
+    },
+  },
 };
 
 export default nextConfig;
