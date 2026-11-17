@@ -70,6 +70,7 @@ async function UserNav() {
         <span aria-hidden className="absolute inset-x-0 -top-2 h-2" />
         <p className="px-3 pt-1.5 pb-2 font-hand text-lg leading-none text-ink-soft">Hallo, {user.username}!</p>
         <MenuLink href={`/u/${user.username}`}>Mein Profil</MenuLink>
+        <MenuLink href="/library">Meine Bibliothek</MenuLink>
         <MenuLink href="/settings">Einstellungen</MenuLink>
         <div className="mx-2 my-1 border-t border-dashed border-ink/20" />
         <form action={logout}>
