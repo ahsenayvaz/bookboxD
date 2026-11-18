@@ -7,7 +7,28 @@ import { getCurrentUser } from "@/lib/dal";
 import { prisma } from "@/lib/db";
 import { getBook } from "@/lib/openlibrary";
 
-// Buch einer Leseliste zuordnen (status) oder aus der Bibliothek entfernen (null)
+// Lokale Kopie des Buches holen – nur beim ersten Kontakt wird Open Library abgefragt (NFA-05)
+async function ensureBook(olid: string) {
+  const existing = await prisma.book.findUnique({ where: { olid } });
+  if (existing) return existing;
+
+  const details = await getBook(olid);
+  if (!details) return null;
+  return prisma.book.upsert({
+    where: { olid },
+    create: {
+      olid,
+      title: details.title,
+      authors: details.authors,
+      coverId: details.coverId,
+      pageCount: details.pageCount,
+      publishedYear: details.publishedYear,
+    },
+    update: {},
+  });
+}
+
+// ID-17 / ID-29: Buch einer Leseliste zuordnen, zwischen Listen verschieben (status) oder entfernen (null)
 export async function setReadingStatus(olid: string, status: ReadingStatus | null) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -15,28 +36,18 @@ export async function setReadingStatus(olid: string, status: ReadingStatus | nul
 
   if (status === null) {
     await prisma.libraryEntry.deleteMany({ where: { userId: user.id, book: { olid } } });
-  } else {
-    const details = await getBook(olid);
-    if (!details) return;
-
-    const snapshot = {
-      title: details.title,
-      authors: details.authors,
-      coverId: details.coverId,
-      pageCount: details.pageCount,
-      publishedYear: details.publishedYear,
-    };
-    const book = await prisma.book.upsert({
-      where: { olid },
-      create: { olid, ...snapshot },
-      update: snapshot,
-    });
-    await prisma.libraryEntry.upsert({
-      where: { userId_bookId: { userId: user.id, bookId: book.id } },
-      create: { userId: user.id, bookId: book.id, status },
-      update: { status },
-    });
+    refresh();
+    return;
   }
+
+  const book = await ensureBook(olid);
+  if (!book) return;
+
+  await prisma.libraryEntry.upsert({
+    where: { userId_bookId: { userId: user.id, bookId: book.id } },
+    create: { userId: user.id, bookId: book.id, status },
+    update: { status },
+  });
 
   refresh();
 }

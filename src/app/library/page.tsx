@@ -2,10 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BookCover } from "@/components/BookCover";
 import { LibraryControls } from "@/components/LibraryControls";
+import type { ReadingStatus } from "@/generated/prisma/enums";
 import { requireUser } from "@/lib/dal";
 import { prisma } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Meine Bibliothek" };
+
+const FILTERS: { value: ReadingStatus | "all"; label: string }[] = [
+  { value: "all", label: "Alle" },
+  { value: "READING", label: "Lese ich gerade" },
+  { value: "READ", label: "Gelesen" },
+  { value: "WANT_TO_READ", label: "Will lesen" },
+];
 
 const SORTS = [
   { value: "updated", label: "Zuletzt geändert" },
@@ -20,25 +28,38 @@ const ORDER_BY = {
   rating: [{ rating: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
 } as const;
 
-function sortHref(sort: Sort) {
-  return sort === "updated" ? "/library" : `/library?sort=${sort}`;
+function href(status: string, sort: Sort) {
+  const params = new URLSearchParams();
+  if (status !== "all") params.set("status", status);
+  if (sort !== "updated") params.set("sort", sort);
+  const query = params.toString();
+  return query ? `/library?${query}` : "/library";
 }
 
-// ID-29: Persönliche Bibliothek ansehen und bearbeiten
+// ID-29 / ID-17: Persönliche Bibliothek und Leselisten ansehen und bearbeiten
 export default async function LibraryPage({ searchParams }: PageProps<"/library">) {
   const user = await requireUser();
   const params = await searchParams;
+  const status = FILTERS.find((f) => f.value === params.status)?.value ?? "all";
   const sort = SORTS.find((s) => s.value === params.sort)?.value ?? "updated";
 
-  const entries = await prisma.libraryEntry.findMany({
-    where: { userId: user.id },
-    orderBy: [...ORDER_BY[sort]],
-    select: {
-      status: true,
-      updatedAt: true,
-      book: { select: { olid: true, title: true, authors: true, coverId: true } },
-    },
-  });
+  const [entries, counts] = await Promise.all([
+    prisma.libraryEntry.findMany({
+      where: { userId: user.id, ...(status !== "all" && { status }) },
+      orderBy: [...ORDER_BY[sort]],
+      select: {
+        status: true,
+        updatedAt: true,
+        book: { select: { olid: true, title: true, authors: true, coverId: true } },
+      },
+    }),
+    prisma.libraryEntry.groupBy({ by: ["status"], where: { userId: user.id }, _count: true }),
+  ]);
+
+  const countFor = (value: string) =>
+    value === "all"
+      ? counts.reduce((sum, c) => sum + c._count, 0)
+      : (counts.find((c) => c.status === value)?._count ?? 0);
 
   return (
     <div className="mx-auto max-w-[1040px] px-4 pt-10">
@@ -55,12 +76,33 @@ export default async function LibraryPage({ searchParams }: PageProps<"/library"
       </div>
 
       <div className="mt-8 max-w-3xl">
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-dusk">
+        <nav aria-label="Leselisten" className="flex flex-wrap gap-2">
+          {FILTERS.map((f) => {
+            const active = f.value === status;
+            return (
+              <Link
+                key={f.value}
+                href={href(f.value, sort)}
+                aria-current={active ? "page" : undefined}
+                className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+                  active
+                    ? "bg-ember/20 text-cream ring-1 ring-ember/60"
+                    : "text-sand ring-1 ring-line hover:bg-bark hover:text-cream"
+                }`}
+              >
+                {f.label}
+                <span className="ml-1.5 text-xs font-normal text-tan tabular-nums">{countFor(f.value)}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-dusk">
           Sortieren:
           {SORTS.map((s) => (
             <Link
               key={s.value}
-              href={sortHref(s.value)}
+              href={href(status, s.value)}
               aria-current={s.value === sort ? "true" : undefined}
               className={s.value === sort ? "font-semibold text-ember" : "text-tan hover:text-cream"}
             >
@@ -72,7 +114,7 @@ export default async function LibraryPage({ searchParams }: PageProps<"/library"
         {entries.length === 0 ? (
           <div className="mt-8">
             <p className="px-3 pb-4 font-hand text-xl text-tan">
-              Deine Bibliothek ist noch leer.{" "}
+              {status === "all" ? "Deine Bibliothek ist noch leer." : "In dieser Liste steht noch kein Buch."}{" "}
               <Link href="/search" className="text-ember hover:text-honey">
                 Bücher entdecken →
               </Link>
