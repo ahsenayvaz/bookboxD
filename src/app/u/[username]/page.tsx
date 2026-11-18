@@ -47,9 +47,27 @@ export default async function ProfilePage({ params }: PageProps<"/u/[username]">
   ] as const;
 
   const shelves = [
-    { title: "Lese ich gerade", entries: reading, empty: "Gerade liegt kein Buch auf dem Nachttisch." },
-    { title: "Zuletzt gelesen", entries: read, empty: "Dieses Regal wartet noch auf sein erstes Buch." },
-    { title: "Will ich lesen", entries: wantToRead, empty: "Die Wunschliste ist noch leer." },
+    {
+      title: "Lese ich gerade",
+      status: "READING",
+      entries: reading,
+      count: stats.reading,
+      empty: "Gerade liegt kein Buch auf dem Nachttisch.",
+    },
+    {
+      title: "Zuletzt gelesen",
+      status: "READ",
+      entries: read,
+      count: stats.read,
+      empty: "Dieses Regal wartet noch auf sein erstes Buch.",
+    },
+    {
+      title: "Will ich lesen",
+      status: "WANT_TO_READ",
+      entries: wantToRead,
+      count: stats.wantToRead,
+      empty: "Die Wunschliste ist noch leer.",
+    },
   ];
 
   return (
@@ -96,13 +114,20 @@ export default async function ProfilePage({ params }: PageProps<"/u/[username]">
         </div>
       </section>
 
-      {shelves.map(({ title, entries, empty }, i) => (
+      {shelves.map(({ title, status, entries, count, empty }, i) => (
         <section
           key={title}
           className="mt-14 motion-safe:animate-fade-up"
           style={{ animationDelay: `${150 + i * 100}ms` }}
         >
-          <h2 className="ornament-heading">{title}</h2>
+          <div className="flex items-baseline gap-4">
+            <h2 className="ornament-heading flex-1">{title}</h2>
+            {isOwn && count > entries.length && (
+              <Link href={`/library?status=${status}`} className="mb-5 shrink-0 text-sm text-ember hover:text-honey">
+                Alle {count} anzeigen →
+              </Link>
+            )}
+          </div>
           {entries.length > 0 ? (
             <Shelf books={entries.map((e) => e.book)} />
           ) : (
