@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Avatar } from "@/components/Avatar";
 import { BookCover } from "@/components/BookCover";
+import { ProgressForm } from "@/components/ProgressForm";
 import { Stars } from "@/components/Stars";
 import { StatusButtons } from "@/components/StatusButtons";
 import { getCurrentUser } from "@/lib/dal";
@@ -162,9 +163,24 @@ async function LibraryPanel({ olid }: { olid: string }) {
 
   const entry = await prisma.libraryEntry.findFirst({
     where: { userId: user.id, book: { olid } },
-    select: { status: true },
+    select: { status: true, currentPage: true, book: { select: { pageCount: true } } },
   });
-  return <StatusButtons olid={olid} status={entry?.status ?? null} />;
+
+  return (
+    <>
+      <StatusButtons olid={olid} status={entry?.status ?? null} />
+      {entry?.status === "READING" && (
+        <div className="border-t border-dashed border-ink/20 p-5">
+          <ProgressForm olid={olid} currentPage={entry.currentPage} pageCount={entry.book.pageCount} />
+        </div>
+      )}
+      {entry?.status === "WANT_TO_READ" && (
+        <p className="border-t border-dashed border-ink/20 px-5 py-4 text-xs leading-relaxed text-ink-soft">
+          Sobald du mit dem Lesen beginnst, wähle „Lese ich“ und trag deinen Fortschritt ein.
+        </p>
+      )}
+    </>
+  );
 }
 
 async function CommunityRating({ olid }: { olid: string }) {
