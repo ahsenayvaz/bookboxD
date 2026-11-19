@@ -1,19 +1,22 @@
 import "server-only";
 import { prisma } from "./db";
 
-const TIME_ZONE = "Europe/Istanbul";
-const DAY_MS = 24 * 60 * 60 * 1000;
+const DAY_MS = 86_400_000;
 
-// Kalendertag (YYYY-MM-DD) in der Zeitzone der Nutzer
 function todayKey() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE }).format(new Date());
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
+}
+
+// Heutiges Datum (in Istanbul) als UTC-Mitternacht – passend zur `@db.Date`-Spalte
+export function today() {
+  return new Date(`${todayKey()}T00:00:00Z`);
 }
 
 // Aufeinanderfolgende Tage mit Leseeintrag. Der Streak gilt als nicht unterbrochen,
 // solange gestern gelesen wurde und der heutige Tag noch läuft.
 export function currentStreak(days: string[]) {
   const set = new Set(days);
-  let cursor = new Date(`${todayKey()}T00:00:00Z`);
+  let cursor = today();
   if (!set.has(cursor.toISOString().slice(0, 10))) cursor = new Date(cursor.getTime() - DAY_MS);
 
   let streak = 0;
