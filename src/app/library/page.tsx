@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BookCover } from "@/components/BookCover";
 import { LibraryControls } from "@/components/LibraryControls";
 import { ProgressBar } from "@/components/ProgressBar";
+import { Stars } from "@/components/Stars";
 import type { ReadingStatus } from "@/generated/prisma/enums";
 import { requireUser } from "@/lib/dal";
 import { prisma } from "@/lib/db";
@@ -51,6 +52,8 @@ export default async function LibraryPage({ searchParams }: PageProps<"/library"
       select: {
         status: true,
         currentPage: true,
+        rating: true,
+        finishedAt: true,
         updatedAt: true,
         book: { select: { olid: true, title: true, authors: true, coverId: true, pageCount: true } },
       },
@@ -166,6 +169,18 @@ export default async function LibraryPage({ searchParams }: PageProps<"/library"
                         <p className="text-xs text-ink-soft">Seite {entry.currentPage}</p>
                       )}
                     </div>
+                  )}
+
+                  {entry.status === "READ" && (
+                    <p className="flex flex-wrap items-center gap-2 text-xs text-ink-soft">
+                      {entry.rating ? <Stars value={entry.rating} className="text-sm" /> : "Noch nicht bewertet"}
+                      {entry.finishedAt && (
+                        <span>
+                          · gelesen am{" "}
+                          {entry.finishedAt.toLocaleDateString("de-DE", { timeZone: "Europe/Istanbul" })}
+                        </span>
+                      )}
+                    </p>
                   )}
 
                   <div className="mt-auto">
