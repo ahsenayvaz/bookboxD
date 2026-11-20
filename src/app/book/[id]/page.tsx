@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { Avatar } from "@/components/Avatar";
 import { BookCover } from "@/components/BookCover";
 import { ProgressForm } from "@/components/ProgressForm";
+import { StarRating } from "@/components/StarRating";
 import { Stars } from "@/components/Stars";
 import { StatusButtons } from "@/components/StatusButtons";
 import { getCurrentUser } from "@/lib/dal";
@@ -163,7 +165,7 @@ async function LibraryPanel({ olid }: { olid: string }) {
 
   const entry = await prisma.libraryEntry.findFirst({
     where: { userId: user.id, book: { olid } },
-    select: { status: true, currentPage: true, book: { select: { pageCount: true } } },
+    select: { status: true, currentPage: true, rating: true, finishedAt: true, book: { select: { pageCount: true } } },
   });
 
   return (
@@ -179,11 +181,23 @@ async function LibraryPanel({ olid }: { olid: string }) {
           Sobald du mit dem Lesen beginnst, wähle „Lese ich“ und trag deinen Fortschritt ein.
         </p>
       )}
+      {entry?.status === "READ" && (
+        <div className="border-t border-dashed border-ink/20 p-5">
+          <p className="field-label">Deine Bewertung</p>
+          <StarRating olid={olid} rating={entry.rating} />
+          {entry.finishedAt && (
+            <p className="mt-2 text-xs text-ink-soft">
+              Fertig gelesen am {entry.finishedAt.toLocaleDateString("de-DE", { timeZone: "Europe/Istanbul" })}
+            </p>
+          )}
+        </div>
+      )}
     </>
   );
 }
 
 async function CommunityRating({ olid }: { olid: string }) {
+  await connection();
   const [ratings, readers] = await Promise.all([
     prisma.libraryEntry.aggregate({
       where: { book: { olid }, rating: { not: null } },
@@ -214,6 +228,7 @@ async function CommunityRating({ olid }: { olid: string }) {
 }
 
 async function Reviews({ olid }: { olid: string }) {
+  await connection();
   const reviews = await prisma.review.findMany({
     where: { book: { olid }, published: true },
     orderBy: { createdAt: "desc" },

@@ -133,3 +133,20 @@ export async function updateProgress(olid: string, _prev: FormState, formData: F
     values: { page: String(page) },
   };
 }
+
+// ID-14: Sternebewertung 1–5 setzen oder entfernen (null) – nur für gelesene Bücher
+export async function setRating(olid: string, rating: number | null): Promise<{ error?: string }> {
+  const user = await requireUser();
+  if (rating !== null && (!Number.isInteger(rating) || rating < 1 || rating > 5)) {
+    return { error: "Bitte vergib zwischen einem und fünf Sternen." };
+  }
+
+  const { count } = await prisma.libraryEntry.updateMany({
+    where: { userId: user.id, book: { olid }, status: "READ" },
+    data: { rating },
+  });
+  if (count === 0) return { error: "Nur gelesene Bücher können bewertet werden." };
+
+  refresh();
+  return {};
+}
