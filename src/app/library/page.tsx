@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BookCover } from "@/components/BookCover";
 import { LibraryControls } from "@/components/LibraryControls";
+import { ProgressBar } from "@/components/ProgressBar";
 import type { ReadingStatus } from "@/generated/prisma/enums";
 import { requireUser } from "@/lib/dal";
 import { prisma } from "@/lib/db";
@@ -49,8 +50,9 @@ export default async function LibraryPage({ searchParams }: PageProps<"/library"
       orderBy: [...ORDER_BY[sort]],
       select: {
         status: true,
+        currentPage: true,
         updatedAt: true,
-        book: { select: { olid: true, title: true, authors: true, coverId: true } },
+        book: { select: { olid: true, title: true, authors: true, coverId: true, pageCount: true } },
       },
     }),
     prisma.libraryEntry.groupBy({ by: ["status"], where: { userId: user.id }, _count: true }),
@@ -144,6 +146,27 @@ export default async function LibraryPage({ searchParams }: PageProps<"/library"
                       <p className="truncate text-sm text-ink-soft">{book.authors.join(", ")}</p>
                     )}
                   </div>
+
+                  {entry.status === "READING" && (
+                    <div className="max-w-xs">
+                      {book.pageCount ? (
+                        <>
+                          <ProgressBar
+                            value={entry.currentPage}
+                            max={book.pageCount}
+                            size="sm"
+                            label={`Lesefortschritt ${book.title}`}
+                          />
+                          <p className="mt-1 text-xs text-ink-soft tabular-nums">
+                            Seite {entry.currentPage} von {book.pageCount} ·{" "}
+                            {Math.round((entry.currentPage / book.pageCount) * 100)} %
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-ink-soft">Seite {entry.currentPage}</p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="mt-auto">
                     <LibraryControls olid={book.olid} title={book.title} status={entry.status} />
