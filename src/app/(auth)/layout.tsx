@@ -1,5 +1,8 @@
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { LockIcon } from "@/components/Footer";
 import { LogoMark } from "@/components/Logo";
+import { getCurrentUser } from "@/lib/dal";
 
 const TRUST = [
   "Dein Passwort wird nur verschlüsselt (bcrypt) gespeichert – niemand kann es lesen.",
@@ -12,6 +15,9 @@ const TRUST = [
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex justify-center overflow-x-clip px-4 pt-10 pb-6 sm:pt-14">
+      <Suspense fallback={null}>
+        <RedirectIfSignedIn />
+      </Suspense>
       <div className="auth-book">
         {/* rechte Seite: Formular */}
         <div className="auth-book-page paper rounded-l-sm rounded-r-xl shadow-[1px_0_0_#e2cfb0,3px_1px_0_#d6c09e,5px_2px_0_#c9b28d,0_30px_60px_-20px_rgb(0_0_0/0.8)]">
@@ -68,4 +74,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
     </div>
   );
+}
+
+// Bereits angemeldete Nutzer brauchen kein Anmeldeformular. Geprüft wird gegen die Datenbank,
+// damit ein veraltetes Cookie (z. B. nach dem Löschen des Kontos) die Anmeldung nicht blockiert.
+async function RedirectIfSignedIn() {
+  const user = await getCurrentUser();
+  if (user) redirect("/");
+  return null;
 }

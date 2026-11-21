@@ -31,6 +31,7 @@ model User {
   library     LibraryEntry[]
   reviews     Review[]
   readingLogs ReadingLog[]
+  challenges  ReadingChallenge[]
 }
 
 /// Profilbild als Binärdaten (max. 2 MB Upload, serverseitig auf 400×400 JPEG verkleinert)
@@ -70,6 +71,8 @@ model LibraryEntry {
   currentPage Int           @default(0)
   /// Sternebewertung 1–5
   rating      Int?
+  /// Zeitpunkt, zu dem das Buch als „Gelesen“ markiert wurde – zählt für die Reading Challenge
+  finishedAt  DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -78,6 +81,7 @@ model LibraryEntry {
 
   @@unique([userId, bookId])
   @@index([bookId])
+  @@index([userId, status, finishedAt])
 }
 
 model Review {
@@ -96,7 +100,7 @@ model Review {
   @@index([bookId, published])
 }
 
-/// Tägliche Leseeinträge – Grundlage für den Lese-Streak
+/// Tägliche Leseeinträge – Grundlage für den Lese-Streak (ein Eintrag pro Nutzer, Buch und Tag)
 model ReadingLog {
   id        String   @id @default(cuid())
   userId    String
@@ -108,5 +112,20 @@ model ReadingLog {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, bookId, date])
   @@index([userId, date])
+}
+
+/// Persönliches Leseziel (Anzahl Bücher) für ein Kalenderjahr
+model ReadingChallenge {
+  id        String   @id @default(cuid())
+  userId    String
+  year      Int
+  goal      Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year])
 }
