@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { BookCover } from "./BookCover";
+import { ProgressBar } from "./ProgressBar";
 
-type ShelfBook = { olid: string; title: string; coverId: number | null; publishedYear?: number | null };
+type ShelfBook = {
+  olid: string;
+  title: string;
+  coverId: number | null;
+  publishedYear?: number | null;
+  /** Lesefortschritt 0–1, wird als schmaler Balken unter dem Cover gezeigt */
+  progress?: number;
+};
 
 // Eine Bücherreihe auf einem Holzbrett; auf kleinen Bildschirmen seitlich scrollbar
 export function Shelf({ books }: { books: ShelfBook[] }) {
@@ -21,6 +29,16 @@ export function Shelf({ books }: { books: ShelfBook[] }) {
             >
               <BookCover coverId={book.coverId} title={book.title} sizes="(min-width: 640px) 160px, 104px" />
             </Link>
+            {book.progress !== undefined && (
+              <ProgressBar
+                value={Math.round(book.progress * 100)}
+                max={100}
+                size="sm"
+                tone="dark"
+                label={`Lesefortschritt ${book.title}`}
+                className="mt-2"
+              />
+            )}
           </li>
         ))}
       </ul>

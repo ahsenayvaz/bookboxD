@@ -17,7 +17,10 @@ function getShelf(userId: string, status: ReadingStatus) {
     where: { userId, status },
     orderBy: { updatedAt: "desc" },
     take: 6,
-    select: { book: { select: { olid: true, title: true, coverId: true, publishedYear: true } } },
+    select: {
+      currentPage: true,
+      book: { select: { olid: true, title: true, coverId: true, publishedYear: true, pageCount: true } },
+    },
   });
 }
 
@@ -52,6 +55,7 @@ export default async function ProfilePage({ params }: PageProps<"/u/[username]">
       status: "READING",
       entries: reading,
       count: stats.reading,
+      showProgress: true,
       empty: "Gerade liegt kein Buch auf dem Nachttisch.",
     },
     {
@@ -59,6 +63,7 @@ export default async function ProfilePage({ params }: PageProps<"/u/[username]">
       status: "READ",
       entries: read,
       count: stats.read,
+      showProgress: false,
       empty: "Dieses Regal wartet noch auf sein erstes Buch.",
     },
     {
@@ -66,6 +71,7 @@ export default async function ProfilePage({ params }: PageProps<"/u/[username]">
       status: "WANT_TO_READ",
       entries: wantToRead,
       count: stats.wantToRead,
+      showProgress: false,
       empty: "Die Wunschliste ist noch leer.",
     },
   ];
@@ -114,7 +120,7 @@ export default async function ProfilePage({ params }: PageProps<"/u/[username]">
         </div>
       </section>
 
-      {shelves.map(({ title, status, entries, count, empty }, i) => (
+      {shelves.map(({ title, status, entries, count, showProgress, empty }, i) => (
         <section
           key={title}
           className="mt-14 motion-safe:animate-fade-up"
@@ -129,7 +135,12 @@ export default async function ProfilePage({ params }: PageProps<"/u/[username]">
             )}
           </div>
           {entries.length > 0 ? (
-            <Shelf books={entries.map((e) => e.book)} />
+            <Shelf
+              books={entries.map(({ book, currentPage }) => ({
+                ...book,
+                progress: showProgress && book.pageCount ? currentPage / book.pageCount : undefined,
+              }))}
+            />
           ) : (
             <div>
               <p className="px-3 pb-4 font-hand text-xl text-tan">
